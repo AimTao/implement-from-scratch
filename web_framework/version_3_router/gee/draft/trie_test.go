@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestTriangle(t *testing.T) {
+func Test(t *testing.T) {
 	trie := Trie{
 		root: &Node{next: make(map[rune]*Node)},
 	}
