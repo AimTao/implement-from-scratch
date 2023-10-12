@@ -2,10 +2,11 @@ package main
 
 import (
     "fmt"
-    "gee/gee"
     "html/template"
     "net/http"
     "time"
+
+    "version_6_template/gee"
 )
 
 type student struct {
