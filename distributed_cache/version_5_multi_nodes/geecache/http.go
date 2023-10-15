@@ -16,10 +16,12 @@ const (
 	defaultReplicas = 50
 )
 
+// HTTPPool 服务端：提供获取数据的服务
 type HTTPPool struct {
-	self     string
+	self     string // 当前节点的 IP/端口
 	basePath string
 
+	// 增加能力：设置和获取远程节点的能力
 	mu          sync.Mutex
 	peers       *consistenthash.Map    // 一致性哈希
 	httpGetters map[string]*httpGetter // 记录每个远程节点的 httpGetter，httpGetter 包含了 baseURL
@@ -66,35 +68,44 @@ func (h *HTTPPool) Log(format string, v ...interface{}) {
 	log.Printf("[Server %s] %s", h.self, fmt.Sprintf(format, v...))
 }
 
-// Set 实例化一个一致性哈希，并向哈希环中添加节点。
+// Set 设置远程节点的能力：实例化一个一致性哈希，并向哈希环中添加节点。
 func (h *HTTPPool) Set(peers ...string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	h.peers = consistenthash.New(defaultReplicas, nil)
-	h.peers.Add(peers...)
+	h.peers.Add(peers...) // 将节点加到哈希环上
+
+	// 保存 key 和对应的 httpGetter 到 map 字段 httpGetters 中
 	h.httpGetters = make(map[string]*httpGetter, len(peers))
 	for _, peer := range peers {
-		h.httpGetters[peer] = &httpGetter{baseURL: peer + h.basePath}
+		h.httpGetters[peer] = &httpGetter{
+			baseURL: peer + h.basePath,
+		}
 	}
 }
 
-// PickPeer 包装了一致性哈希获取真实节点的方法 consistenthash.Map.Get
+// PickPeer 获取远程节点的能力：包装了一致性哈希获取真实节点的方法 consistenthash.Map.Get
 func (h *HTTPPool) PickPeer(key string) (PeerGetter, bool) {
 	h.mu.Lock()
-	defer h.mu.Lock()
-	peer := h.peers.Get(key)
-	if peer != "" && peer != h.self {
+	defer h.mu.Unlock()
+
+	// 从哈希环上获取缓存值属于那个节点，如果不是空且不是自身，则返回对应的节点。
+	if peer := h.peers.Get(key); peer != "" && peer != h.self {
 		h.Log("Pick peer %s", peer)
 		return h.httpGetters[peer], true
 	}
 	return nil, false
 }
 
+// httpGetter 客户端：获取数据，实现 PeerGetter 接口
 type httpGetter struct {
 	baseURL string
 }
 
+// Get 步骤：
+// 1.将 baseURL、group、key 拼接为远程节点缓存值的访问地址 URL
+// 2.访问 URL 获取缓存值返回
 func (g *httpGetter) Get(group string, key string) ([]byte, error) {
 	u := fmt.Sprintf("%v%v/%v", g.baseURL, url.QueryEscape(group), url.QueryEscape(key))
 	/* url.QueryEscape 是 URL 转义函数，

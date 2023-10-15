@@ -23,6 +23,8 @@ type Group struct {
 	name      string
 	getter    Getter
 	mainCache cache
+
+	peers PeerPicker // 一致性哈希
 }
 
 var (
@@ -55,12 +57,12 @@ func GetGroup(name string) *Group {
 }
 
 /*
-                          是
-接收 key --> 检查是否被缓存 -----> 返回缓存值 (1)
-                |  否                         是
-                |-----> 是否应当从远程节点获取 -----> 与远程节点交互 --> 返回缓存值 (2)
+                               是
+(Get)接收 key --> 检查是否被缓存 -----> 返回缓存值 (1)
+                |  否                              是
+                |-----> (load)是否应当从远程节点获取 -----> (getFromPeer)与远程节点交互 --> 返回缓存值 (2)
                             |  否
-                            |-----> 调用`回调函数`，获取值并添加到缓存 --> 返回缓存值 (3)
+                            |-----> (getLocally)调用`回调函数`，获取值，(populateCache)并添加到缓存 --> 返回缓存值 (3)
 Get 完成流程（1）
 load + getLocally 完成流程(3)
 */
@@ -79,9 +81,27 @@ func (g *Group) Get(key string) (ByteView, error) {
 	return g.load(key)
 }
 
-// load 缓存不存在，调用 getLocally 获取数据
+// load: 缓存不存在时，先在远程节点中查找，未果再调用 getLocally 获取数据
 func (g *Group) load(key string) (ByteView, error) {
+	if g.peers != nil {
+		if peer, ok := g.peers.PickPeer(key); ok { // 找到 key 对应的远程节点。
+			value, err := g.getFromPeer(peer, key) // 在远程节点中查找
+			if err == nil {
+				return value, nil
+			}
+			log.Println("[GeeCache] failed to get from peer", err)
+		}
+	}
 	return g.getLocally(key)
+}
+
+// 从远程节点获取数据，传入的是 PeerGetter 接口类型，只要实现了 Get 方法，就可以传入
+func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
+	bytes, err := peer.Get(g.name, key)
+	if err != nil {
+		return ByteView{}, err
+	}
+	return ByteView{bytes}, nil
 }
 
 // getLocally 调用用户的回调函数 g.getter.Get，获取数据，并使用 populateCache 添加数据
@@ -100,6 +120,13 @@ func (g *Group) populateCache(key string, value ByteView) {
 	g.mainCache.add(key, value)
 }
 
+func (g *Group) RegisterPeers(peers PeerPicker) {
+	if g.peers != nil {
+		panic("RegisterPeerPicker called more than once")
+	}
+	g.peers = peers
+}
+
 /*
 使用一致性哈希选择节点        是                                    是
     |-----> 是否是远程节点 -----> HTTP 客户端访问远程节点 --> 成功？-----> 服务端返回返回值
@@ -108,11 +135,11 @@ func (g *Group) populateCache(key string, value ByteView) {
 */
 
 // ?
-type PeerPicker interface {
-	PickPeer(key string) (peer PeerPicker, ok bool)
+type PeerGetter interface {
+	Get(group string, key string) ([]byte, error) // 获取缓存值
 }
 
 // ?
-type PeerGetter interface {
-	Get(group string, key string) ([]byte, error)
+type PeerPicker interface {
+	PickPeer(key string) (peer PeerGetter, ok bool) // 根据 key 选择节点 PeerGetter
 }

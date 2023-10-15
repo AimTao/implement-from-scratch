@@ -1,6 +1,7 @@
 package consistenthash
 
 import (
+	"fmt"
 	"hash/crc32"
 	"sort"
 	"strconv"
@@ -45,6 +46,7 @@ func (m *Map) Add(keys ...string) {
 		}
 	}
 	sort.Ints(m.keys) // 对虚拟节点排序
+	fmt.Println(m.keys)
 }
 
 // Get 获取 key 所在节点名
@@ -57,10 +59,15 @@ func (m *Map) Get(key string) string {
 
 	hash := int(m.hash([]byte(key)))
 
-	// 二分查找虚拟节点
-	index := sort.Search(len(m.keys), func(i int) bool { // 这个函数的意义
+	// 二分查找虚拟节点，找到 hash 大于的第一个节点。
+	index := sort.Search(len(m.keys), func(i int) bool {
+		tmp := m.keys[i]
+		fmt.Println(tmp)
 		return m.keys[i] >= hash
 	})
 
+	// 为什么要取模？
+	// 当 hash 大于所有节点 hash 时，返回 index 就等于 len(m.keys)，keys[index] 已经越界。
+	// 因为是一个环，此时应该返回第一个节点 m.keys[0]，然后通过节点名，获取真实节点名 m.hashMap[m.keys[0]]。
 	return m.hashMap[m.keys[index%len(m.keys)]]
 }
