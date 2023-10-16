@@ -1,3 +1,3 @@
-module version_6_template
+module version_7_recovery
 
 go 1.17

@@ -1,3 +1,3 @@
-module version_1_LRU
+module version_2_singal_node
 
 go 1.21
