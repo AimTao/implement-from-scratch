@@ -2,7 +2,7 @@ package geecache
 
 import (
     "sync"
-    "version_1_LRU/geecache/lru"
+    "version_3_http_server/geecache/lru"
 )
 
 type cache struct {
