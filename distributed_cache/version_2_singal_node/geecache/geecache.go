@@ -6,20 +6,24 @@ import (
 	"sync"
 )
 
+// Getter 用于从各类的外部数据源获取数据
 type Getter interface {
 	Get(key string) ([]byte, error)
 }
 
+// GetterFunc 为了便于使用者传入匿名函数到 Getter 中
+// 使用时，只需将匿名函数转化为 GetterFunc 类型，即可传入 Getter
 type GetterFunc func(key string) ([]byte, error)
 
 func (f GetterFunc) Get(key string) ([]byte, error) {
 	return f(key)
 }
 
+// Group 负责与用户交互（获取缓存值），并拥有从外部数据源获取值并存储在缓存中的功能
 type Group struct {
-	name      string
-	getter    Getter
-	mainCache cache
+	name      string // 一个 Group 是一个命名空间，并有唯一的 name。比如可以创建多个 Group，储存不同类别的信息。
+	getter    Getter // 当缓存未命中时，可以调用 Getter.Get 这个回调函数获取值，并储存在缓存中。
+	mainCache cache  // 并发安全的缓存
 }
 
 var (
@@ -47,7 +51,7 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 func GetGroup(name string) *Group {
 	groupMu.RLock() // 为什么是读锁？
 	g := groups[name]
-	groupMu.Unlock()
+	groupMu.RUnlock()
 	return g
 }
 

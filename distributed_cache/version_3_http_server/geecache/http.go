@@ -1,56 +1,56 @@
 package geecache
 
 import (
-    "fmt"
-    "log"
-    "net/http"
-    "strings"
+	"fmt"
+	"log"
+	"net/http"
+	"strings"
 )
 
-const DEFAULTBASEPATH = "/_geecache/"
+const BASEPATH = "/_geecache/" // 请求路径应该是 "/<basepath>/<groupname>/<key>"
 
 type HTTPPool struct {
-    self     string
-    basePath string
+	self     string
+	basePath string
 }
 
-func NewHTTPPool(self string) *HTTPPool {
-    return &HTTPPool{
-        self:     self,
-        basePath: DEFAULTBASEPATH,
-    }
+func NewHTTPPool(self string) *HTTPPool { // 为什么要设置这两个字段
+	return &HTTPPool{
+		self:     self,     // 本机的IP/端口
+		basePath: BASEPATH, // 请求前缀，便于过滤请求
+	}
 }
 
-func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    if !strings.HasPrefix(r.URL.Path, p.basePath) {
-        panic("HTTPPool serving unexpected path: " + r.URL.Path)
-    }
-    p.Log("%s %s", r.Method, r.URL.Path)
-    parts := strings.SplitN(r.URL.Path[len(p.basePath):], "/", 2)
-    if len(parts) != 2 {
-        http.Error(w, "bad request", http.StatusBadRequest)
-        return
-    }
+func (h *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !strings.HasPrefix(r.URL.Path, h.basePath) {
+		panic("Error path: " + r.URL.Path)
+	}
 
-    groupName := parts[0]
-    key := parts[1]
+	h.Log("%s %s", r.Method, r.URL.Path)
 
-    group := GetGroup(groupName)
-    if group == nil {
-        http.Error(w, "no such group: "+groupName, http.StatusNotFound)
-        return
-    }
+	parts := strings.SplitN(r.URL.Path[len(BASEPATH):], "/", 2)
+	if len(parts) != 2 {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
 
-    view, err := group.Get(key)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+	groupName := parts[0]
+	key := parts[1]
+	group := GetGroup(groupName)
+	if group == nil {
+		http.Error(w, "no such group: "+groupName, http.StatusNotFound)
+		return
+	}
+	view, err := group.Get(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/octet-stream")
-    w.Write(view.ByteSlice())
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(view.ByteSlice())
 }
 
-func (p *HTTPPool) Log(format string, v ...interface{}) {
-    log.Printf("[Server %s] %s", p.self, fmt.Sprintf(format, v...))
+func (h *HTTPPool) Log(format string, v ...interface{}) {
+	log.Printf("[Server %s] %s", h.self, fmt.Sprintf(format, v...))
 }
