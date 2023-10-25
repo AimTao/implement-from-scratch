@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const BASEPATH = "/_geecache/" // 请求路径应该是 "/<basepath>/<groupname>/<key>"
+const defaultBasePath = "/_geecache/" // 请求路径应该是 "/<basepath>/<groupname>/<key>"
 
 type HTTPPool struct {
 	self     string
@@ -16,8 +16,8 @@ type HTTPPool struct {
 
 func NewHTTPPool(self string) *HTTPPool { // 为什么要设置这两个字段
 	return &HTTPPool{
-		self:     self,     // 本机的IP/端口
-		basePath: BASEPATH, // 请求前缀，便于过滤请求
+		self:     self,            // 本机的IP/端口
+		basePath: defaultBasePath, // 请求前缀，便于过滤请求
 	}
 }
 
@@ -28,7 +28,7 @@ func (h *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	h.Log("%s %s", r.Method, r.URL.Path)
 
-	parts := strings.SplitN(r.URL.Path[len(BASEPATH):], "/", 2)
+	parts := strings.SplitN(r.URL.Path[len(defaultBasePath):], "/", 2)
 	if len(parts) != 2 {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
