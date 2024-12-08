@@ -1,3 +1,3 @@
-module version_4_consistent_hashing
+module geecache
 
 go 1.21

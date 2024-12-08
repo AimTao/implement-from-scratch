@@ -1,3 +1,3 @@
-module version_7_recovery
+module geeweb
 
 go 1.17

@@ -1,3 +1,3 @@
-module version_1_LRU
+module geecache
 
 go 1.21

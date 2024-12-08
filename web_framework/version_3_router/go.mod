@@ -1,3 +1,3 @@
-module version_3_router
+module geeweb
 
 go 1.17

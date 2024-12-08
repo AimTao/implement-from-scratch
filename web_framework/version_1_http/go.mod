@@ -1,3 +1,3 @@
-module version_1_http
+module geeweb
 
 go 1.17

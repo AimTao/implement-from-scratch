@@ -2,13 +2,13 @@ package geecache
 
 import (
 	"fmt"
+	"geecache/geecache/consistenthash"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
-	"version_5_multi_nodes/geecache/consistenthash"
 )
 
 const (

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"geeweb/gee"
 	"net/http"
-	"version_1_http/gee"
 )
 
 func main() {

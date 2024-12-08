@@ -1,3 +1,3 @@
-module version_5_multi_nodes
+module geecache
 
 go 1.21

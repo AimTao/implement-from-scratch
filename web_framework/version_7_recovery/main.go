@@ -1,6 +1,6 @@
 package main
 
-import "version_7_recovery/gee"
+import "geeweb/gee"
 
 func main() {
 	r := gee.New()

@@ -1,8 +1,8 @@
 package geecache
 
 import (
+	"geecache/geecache/lru"
 	"sync"
-	"version_2_singal_node/geecache/lru"
 )
 
 // 为什么要封装 cache？

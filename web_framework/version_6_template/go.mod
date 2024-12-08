@@ -1,3 +1,3 @@
-module version_6_template
+module geeweb
 
 go 1.17

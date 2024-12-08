@@ -1,8 +1,8 @@
 package main
 
 import (
+	"geeweb/gee"
 	"net/http"
-	"version_4_group/gee"
 )
 
 func main() {

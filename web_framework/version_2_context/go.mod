@@ -1,3 +1,3 @@
-module version_2_context
+module geeweb
 
 go 1.17

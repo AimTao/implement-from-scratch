@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"version_6_template/gee"
+	"geeweb/gee"
 )
 
 type student struct {

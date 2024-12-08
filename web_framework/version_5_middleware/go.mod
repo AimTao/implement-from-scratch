@@ -1,3 +1,3 @@
-module version_5_middleware
+module geeweb
 
 go 1.17

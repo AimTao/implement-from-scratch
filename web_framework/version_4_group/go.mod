@@ -1,3 +1,3 @@
-module version_4_group
+module geeweb
 
 go 1.17
