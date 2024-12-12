@@ -1,6 +1,7 @@
 package geerpc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 // Call 实例表示一次 RPC 调用请求
@@ -197,7 +199,7 @@ func dialTimeout(f NewClientFunc, network, address string, opts ...*Option) (cli
 	}
 
 	// 声明一个通道，用于传输拨号建立连接的结果
-	result := make(chan dialResult)
+	result := make(chan dialResult, 1) // 设置缓冲区为 1，防止在超时后，无人接收 channel 数据，导致 channel 发送时阻塞，导致 goroutine 泄漏
 
 	// 当发生错误时，保证 client 为 nil
 	defer func() {
@@ -216,6 +218,12 @@ func dialTimeout(f NewClientFunc, network, address string, opts ...*Option) (cli
 		client, err = f(conn, opt)
 		result <- dialResult{client: client, err: err}
 	}()
+
+	// 如果超时时间为 0，表示没限制，直接等待 result 通道返回结果
+	if opt.ConnectTimeout == 0 {
+		result := <-result
+		return result.client, result.err
+	}
 
 	// 超时处理，阻塞等待，等待超时或收到结果
 	select {
