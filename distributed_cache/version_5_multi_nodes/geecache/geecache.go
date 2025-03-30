@@ -24,7 +24,7 @@ type Group struct {
 	getter    Getter
 	mainCache cache
 
-	peers PeerPicker // 一致性哈希
+	peers PeerPicker // 用于选择远程节点
 }
 
 var (
@@ -120,6 +120,7 @@ func (g *Group) populateCache(key string, value ByteView) {
 	g.mainCache.add(key, value)
 }
 
+// RegisterPeers 将实现了 PeerPicker 接口的变量注入到 Group 中
 func (g *Group) RegisterPeers(peers PeerPicker) {
 	if g.peers != nil {
 		panic("RegisterPeerPicker called more than once")
@@ -134,12 +135,12 @@ func (g *Group) RegisterPeers(peers PeerPicker) {
                     |----------------------------> 回退到本地节点处理。
 */
 
-// ?
+// PeerGetter 获取到的远程节点，协助 Group 从远程节点获取缓存值
 type PeerGetter interface {
 	Get(group string, key string) ([]byte, error) // 获取缓存值
 }
 
-// ?
+// PeerPicker 协助 Group 通过 key 选择远程节点
 type PeerPicker interface {
 	PickPeer(key string) (peer PeerGetter, ok bool) // 根据 key 选择节点 PeerGetter
 }

@@ -13,10 +13,10 @@ import (
 
 const (
 	defaultBasePath = "/_geecache/" // 请求路径应该是 "/<basepath>/<groupname>/<key>"
-	defaultReplicas = 50
+	defaultReplicas = 3
 )
 
-// HTTPPool 服务端：提供获取数据的服务
+// HTTPPool :包含服务端和客户端，服务端提供获取本机数据的 HTTP 服务，客户端提供访问其他节点的方法
 type HTTPPool struct {
 	self     string // 当前节点的 IP/端口
 	basePath string
@@ -73,8 +73,8 @@ func (h *HTTPPool) Set(peers ...string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h.peers = consistenthash.New(defaultReplicas, nil)
-	h.peers.Add(peers...) // 将节点加到哈希环上
+	h.peers = consistenthash.New(defaultReplicas, nil) // 初始化哈希环
+	h.peers.Add(peers...)                              // 将节点加到哈希环上
 
 	// 保存 key 和对应的 httpGetter 到 map 字段 httpGetters 中
 	h.httpGetters = make(map[string]*httpGetter, len(peers))
@@ -131,4 +131,4 @@ func (g *httpGetter) Get(group string, key string) ([]byte, error) {
 	return bytes, nil
 }
 
-var _ PeerGetter = (*httpGetter)(nil) // ?
+var _ PeerGetter = (*httpGetter)(nil) // 保证 httpGetter 实现了 PeerGetter。没实现在编译时报错。

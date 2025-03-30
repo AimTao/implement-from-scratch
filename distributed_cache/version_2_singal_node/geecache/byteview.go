@@ -19,10 +19,10 @@ func (byteView ByteView) Len() int { // ByteView 实现 lru.Value 接口
 	return len(byteView.b)
 }
 
-// 为什么 ByteSlice 要返回拷贝？
+// ByteSlice 为什么要返回拷贝？
 // 防止缓存值被外部修改，这里直接返回拷贝
 func (byteView ByteView) ByteSlice() []byte {
-	return cloneBytes(byteView.b) // 为什么不直接使用 make，要封装 cloneBytes 函数
+	return cloneBytes(byteView.b) // 为什么不直接使用 make，要封装 cloneBytes 函数？方便复用 cloneBytes。
 }
 
 // 为什么需要 cloneBytes ?
